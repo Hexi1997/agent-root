@@ -2,12 +2,17 @@
 
 `agent-root-cli` is a small CLI for people who want one source of truth for agent instructions and a thin compatibility layer for multiple coding clients.
 
+## Platform support
+
+- Supported: macOS, Linux
+- Not supported: Windows
+
 The default model is:
 
 - single source: `~/AGENTS.md`
 - Codex target: `~/.codex/AGENTS.md`
 - Claude target: `~/.claude/CLAUDE.md`
-- Cursor strategy: rely on Cursor's automatic import of external tool configs, while documenting the setup in `~/.cursor/AGENTS.md`
+- Cursor strategy: create a Cursor user rule manually and point it to `@~/AGENTS.md`
 
 ## Why this exists
 
@@ -17,7 +22,7 @@ What does exist today:
 
 - Codex has a documented `AGENTS.md` mechanism.
 - Claude Code uses `CLAUDE.md`, and can import `AGENTS.md`.
-- Cursor can import configs from other tools, but does not document a stable home-directory markdown file for global rules.
+- Cursor supports user rules, and those rules can reference an external `AGENTS.md` via `@`.
 
 `agent-root-cli` treats this as an adapter problem instead of waiting for a universal standard.
 
@@ -30,7 +35,7 @@ npm install -g agent-root-cli
 Or run it without a global install:
 
 ```bash
-npx agent-root-cli sync
+npx agent-root-cli link
 ```
 
 ## Usage
@@ -41,67 +46,61 @@ Create the single source file if it does not exist:
 agent-root-cli init
 ```
 
-Sync all targets:
+Link all targets:
 
 ```bash
-agent-root-cli sync
+agent-root-cli link
 ```
 
 Preview changes without writing:
 
 ```bash
-agent-root-cli sync --dry-run
+agent-root-cli link --dry-run
 ```
 
 Use a custom source:
 
 ```bash
-agent-root-cli sync --source ~/company/AGENTS.md
+agent-root-cli link --source ~/company/AGENTS.md
 ```
 
 Machine-readable output:
 
 ```bash
-agent-root-cli sync --json
+agent-root-cli link --json
 ```
 
-## What gets written
+## What gets linked
 
 ### Codex
 
-`agent-root-cli` mirrors the source content into:
+`agent-root-cli` creates a symlink:
 
 ```text
-~/.codex/AGENTS.md
+~/.codex/AGENTS.md -> ~/AGENTS.md
 ```
 
 ### Claude
 
-`agent-root-cli` writes a managed shim:
+`agent-root-cli` creates a symlink:
+
+```text
+~/.claude/CLAUDE.md -> ~/AGENTS.md
+```
+
+This keeps Codex and Claude on the same source without duplicated files.
+
+### Cursor
+
+`agent-root-cli` no longer writes any Cursor-specific files.
+
+Create a Cursor user rule manually and set it to:
 
 ```md
 @/Users/you/AGENTS.md
 ```
 
-to:
-
-```text
-~/.claude/CLAUDE.md
-```
-
-This keeps Claude on the same source without duplicating content.
-
-### Cursor
-
-Today, the stable path is `import-only` mode:
-
-- sync Codex and Claude home files
-- keep Cursor's "Automatically import agent configs from other tools" enabled
-- write a reference file to `~/.cursor/AGENTS.md`
-
-This is intentionally conservative because Cursor's global rule persistence format is not documented and may change.
-
-There is also an experimental `--cursor-mode db`, but it currently only validates that the expected Cursor state database exists. It does not mutate Cursor's internal storage yet.
+In practice, use your actual source path (default: `~/AGENTS.md`).
 
 ## Environment overrides
 
@@ -110,13 +109,10 @@ These are mainly useful for testing:
 - `AGENTSYNC_HOME`
 - `CODEX_HOME`
 - `CLAUDE_HOME`
-- `CURSOR_DATA_DIR`
 
 ## Roadmap
 
-- add a real Cursor global-rule adapter once the persistence format is stable enough to target
-- add Windows and Linux-specific path presets for Cursor data directories
-- add managed block mode for teams that want to preserve custom content around generated shims
+- add managed block mode for teams that want to preserve custom content around generated links
 
 ## License
 

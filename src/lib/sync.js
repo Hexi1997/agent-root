@@ -18,11 +18,6 @@ export function createContext(options = {}) {
   const source = expandHome(options.source || path.join(home, "AGENTS.md"), home);
   const codexHome = expandHome(process.env.CODEX_HOME || path.join(home, ".codex"), home);
   const claudeHome = expandHome(process.env.CLAUDE_HOME || path.join(home, ".claude"), home);
-  const cursorDataDir = expandHome(
-    process.env.CURSOR_DATA_DIR ||
-      path.join(home, "Library", "Application Support", "Cursor"),
-    home,
-  );
 
   return {
     home,
@@ -30,16 +25,13 @@ export function createContext(options = {}) {
       source,
       codexTarget: path.join(codexHome, "AGENTS.md"),
       claudeTarget: path.join(claudeHome, "CLAUDE.md"),
-      cursorHintFile: path.join(home, ".cursor", "AGENTS.md"),
-      cursorStorageDb: path.join(cursorDataDir, "User", "globalStorage", "state.vscdb"),
     },
   };
 }
 
 export function parseArgs(args) {
   const options = {
-    command: "sync",
-    cursorMode: "import-only",
+    command: "link",
     dryRun: false,
     force: false,
     help: false,
@@ -56,9 +48,6 @@ export function parseArgs(args) {
     switch (arg) {
       case "--source":
         options.source = queue.shift();
-        break;
-      case "--cursor-mode":
-        options.cursorMode = queue.shift() || "import-only";
         break;
       case "--dry-run":
         options.dryRun = true;
@@ -78,12 +67,8 @@ export function parseArgs(args) {
     }
   }
 
-  if (!["sync", "init"].includes(options.command)) {
+  if (!["link", "init"].includes(options.command)) {
     throw new Error(`Unknown command: ${options.command}`);
-  }
-
-  if (!["import-only", "db"].includes(options.cursorMode)) {
-    throw new Error(`Unsupported cursor mode: ${options.cursorMode}`);
   }
 
   return options;
@@ -105,36 +90,30 @@ export async function ensureSourceFile(context, { force }) {
 }
 
 export async function runSync(context, options) {
-  const sourceContent = await fs.readFile(context.paths.source, "utf8");
   const results = [];
 
   results.push(
-    await writeManagedFile({
+    await ensureManagedSymlink({
       dryRun: options.dryRun,
       label: "codex",
-      path: context.paths.codexTarget,
-      content: sourceContent,
-      description: "Mirror source content into Codex home AGENTS.md",
+      targetPath: context.paths.codexTarget,
+      sourcePath: context.paths.source,
+      description: "Link Codex home AGENTS.md to the single source file",
     }),
   );
 
   results.push(
-    await writeManagedFile({
+    await ensureManagedSymlink({
       dryRun: options.dryRun,
       label: "claude",
-      path: context.paths.claudeTarget,
-      content: renderClaudeShim(context.paths.source),
-      description: "Point Claude home CLAUDE.md at the single AGENTS source",
+      targetPath: context.paths.claudeTarget,
+      sourcePath: context.paths.source,
+      description: "Link Claude home CLAUDE.md to the single source file",
     }),
   );
 
   results.push(
-    await syncCursor({
-      context,
-      dryRun: options.dryRun,
-      mode: options.cursorMode,
-      sourceContent,
-    }),
+    buildCursorManualStep(context.paths.source),
   );
 
   if (options.json) {
@@ -167,79 +146,36 @@ export function summarizeResults(results) {
     .join("\n");
 }
 
-async function syncCursor({ context, dryRun, mode, sourceContent }) {
-  if (mode === "db") {
-    const dbExists = await fileExists(context.paths.cursorStorageDb);
-    return {
-      label: "cursor",
-      status: dryRun ? "planned" : dbExists ? "skipped" : "missing",
-      path: context.paths.cursorStorageDb,
-      details: dbExists
-        ? "experimental db mode is not implemented yet; import-only mode remains the stable path"
-        : "Cursor state database was not found",
-    };
+async function ensureManagedSymlink({ dryRun, label, targetPath, sourcePath, description }) {
+  const expected = path.resolve(sourcePath);
+  const currentState = await inspectPath(targetPath, expected);
+  if (currentState.kind === "directory") {
+    throw new Error(`Refusing to replace directory with symlink: ${targetPath}`);
   }
+  const needsUpdate = !currentState.exists || !currentState.matches;
+  const status = !currentState.exists ? "created" : currentState.matches ? "unchanged" : "updated";
 
-  const hintContent = renderCursorHint(sourceContent, context.paths);
-  return writeManagedFile({
-    dryRun,
-    label: "cursor",
-    path: context.paths.cursorHintFile,
-    content: hintContent,
-    description:
-      "Create a human-readable Cursor hint file while relying on imported Codex/Claude home configs",
-    details:
-      "Cursor should ingest the synced Codex/Claude home files when automatic external config import is enabled",
-  });
-}
-
-async function writeManagedFile({ dryRun, label, path: targetPath, content, description, details }) {
-  const exists = await fileExists(targetPath);
-  const current = exists ? await fs.readFile(targetPath, "utf8") : null;
-  const status = !exists ? "created" : current === content ? "unchanged" : "updated";
-
-  if (!dryRun && current !== content) {
+  if (!dryRun && needsUpdate) {
     await fs.mkdir(path.dirname(targetPath), { recursive: true });
-    await fs.writeFile(targetPath, content, "utf8");
+    await fs.rm(targetPath, { force: true });
+    await fs.symlink(sourcePath, targetPath);
   }
 
   return {
     label,
     status: dryRun ? "planned" : status,
     path: targetPath,
-    details: details || description,
+    details: `${description} (${targetPath} -> ${sourcePath})`,
   };
 }
 
-function renderClaudeShim(sourcePath) {
-  return `# Managed by agent-root-cli
-# Edit the single source file instead:
-# ${sourcePath}
-
-@${sourcePath}
-`;
-}
-
-function renderCursorHint(sourceContent, paths) {
-  return `# Managed by agent-root-cli
-
-This file documents the single-source setup for Cursor.
-
-- Source: ${paths.source}
-- Codex mirror: ${paths.codexTarget}
-- Claude shim: ${paths.claudeTarget}
-
-Cursor does not currently expose a documented home-directory markdown rule file.
-The stable strategy is:
-
-1. Keep Cursor's "Automatically import agent configs from other tools" enabled.
-2. Let Cursor import the synced Codex and Claude home files.
-3. Treat this file as a local audit trail and fallback reference.
-
-## Source Preview
-
-${sourceContent}
-`;
+function buildCursorManualStep(sourcePath) {
+  return {
+    label: "cursor",
+    status: "manual",
+    path: sourcePath,
+    details: `Create a Cursor user rule manually and set it to @${sourcePath}`,
+  };
 }
 
 function expandHome(inputPath, home) {
@@ -260,5 +196,26 @@ async function fileExists(targetPath) {
     return true;
   } catch {
     return false;
+  }
+}
+
+async function inspectPath(targetPath, expectedResolvedPath) {
+  try {
+    const stats = await fs.lstat(targetPath);
+    if (stats.isDirectory()) {
+      return { exists: true, matches: false, kind: "directory" };
+    }
+    if (!stats.isSymbolicLink()) {
+      return { exists: true, matches: false, kind: "file" };
+    }
+
+    const linkTarget = await fs.readlink(targetPath);
+    const resolvedTarget = path.resolve(path.dirname(targetPath), linkTarget);
+    return { exists: true, matches: resolvedTarget === expectedResolvedPath, kind: "symlink" };
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      return { exists: false, matches: false, kind: "missing" };
+    }
+    throw error;
   }
 }

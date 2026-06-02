@@ -40,18 +40,16 @@ function printHelp(defaultSourcePath) {
   process.stdout.write(`agent-root-cli
 
 Usage:
-  agent-root-cli sync [options]
+  agent-root-cli link [options]
   agent-root-cli init [options]
   agent-root-cli --help
 
 Commands:
-  sync              Sync the source AGENTS file into supported targets.
+  link              Link the source AGENTS file into supported targets.
   init              Create the source file if it does not already exist.
 
 Options:
   --source <path>   Override the source file path.
-  --cursor-mode <mode>
-                    Cursor strategy: import-only | db (default: import-only)
   --dry-run         Print planned writes without changing files.
   --force           Overwrite managed targets even if source was just created.
   --json            Output machine-readable JSON.
@@ -61,12 +59,10 @@ Defaults:
   source: ${defaultSourcePath}
 
 Notes:
-  - Codex target mirrors the source content into ~/.codex/AGENTS.md.
-  - Claude target writes ~/.claude/CLAUDE.md as an import shim to the source.
-  - Cursor import-only mode relies on Cursor's "Automatically import agent configs
-    from other tools" toggle and ensures Codex/Claude-compatible home files exist.
-  - Cursor db mode is experimental and currently only verifies the expected
-    Cursor storage paths, without mutating undocumented state.
+  - Codex target is a symlink: ~/.codex/AGENTS.md -> <source-path>.
+  - Claude target is a symlink: ~/.claude/CLAUDE.md -> <source-path>.
+  - Cursor is manual-only: create a user rule in Cursor and point it to
+    @<source-path> (for example @${defaultSourcePath}).
 `);
 }
 
