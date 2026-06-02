@@ -1,0 +1,24 @@
+{
+  "name": "agent-root-cli",
+  "version": "0.0.1",
+  "description": "Sync a single AGENTS.md source into Codex, Claude, and Cursor-compatible targets.",
+  "type": "module",
+  "bin": {
+    "agent-root": "./src/cli.js"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "agents",
+    "codex",
+    "claude",
+    "cursor",
+    "prompt",
+    "sync"
+  ],
+  "license": "MIT"
+}
