@@ -2,16 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 
-const DEFAULT_SOURCE_TEMPLATE = `# AGENTS
-
-## Communication
-- Be concise.
-- Explain important tradeoffs before making risky changes.
-
-## Engineering
-- Prefer small, reviewable diffs.
-- Run relevant checks before finalizing changes.
-`;
+const DEFAULT_SOURCE_TEMPLATE = "";
 
 export function createContext(options = {}) {
   const home = process.env.AGENTSYNC_HOME || os.homedir();

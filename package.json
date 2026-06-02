@@ -1,6 +1,6 @@
 {
   "name": "agent-root-cli",
-  "version": "0.0.5",
+  "version": "0.1.0",
   "description": "Link a single AGENTS.md source into Codex and Claude targets, with manual Cursor user rule guidance.",
   "type": "module",
   "bin": {

@@ -102,6 +102,27 @@ Create a Cursor user rule manually and set it to:
 
 In practice, use your actual source path (default: `~/AGENTS.md`).
 
+## Quick updates via an agent skill
+
+Once `init` and `link` have been run, you can update your instructions in natural
+language instead of editing files by hand, using the `update-user-memory` skill for
+Claude Code (and other agents that support the [skills](https://github.com/vercel-labs/skills) format).
+
+Install it:
+
+```bash
+pnpx skills add Hexi1997/skills --skill=update-user-memory -g
+```
+
+Then just ask your agent, for example:
+
+> Remember globally: replies should be concise
+
+The skill verifies the link is set up, picks the right section in your single source
+file, shows you the change for confirmation, and writes it. Because the targets are
+symlinks, the update is live across Codex and Claude immediately (and Cursor via its
+`@` user rule) — no extra command needed.
+
 ## Environment overrides
 
 These are mainly useful for testing:
