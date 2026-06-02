@@ -97,7 +97,7 @@ This keeps Codex and Claude on the same source without duplicated files.
 Create a Cursor user rule manually and set it to:
 
 ```md
-@/Users/you/AGENTS.md
+@~/AGENTS.md
 ```
 
 In practice, use your actual source path (default: `~/AGENTS.md`).
