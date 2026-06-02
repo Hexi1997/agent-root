@@ -1,6 +1,6 @@
-# agent-root
+# agent-root-cli
 
-`agent-root` is a small CLI for people who want one source of truth for agent instructions and a thin compatibility layer for multiple coding clients.
+`agent-root-cli` is a small CLI for people who want one source of truth for agent instructions and a thin compatibility layer for multiple coding clients.
 
 The default model is:
 
@@ -19,13 +19,18 @@ What does exist today:
 - Claude Code uses `CLAUDE.md`, and can import `AGENTS.md`.
 - Cursor can import configs from other tools, but does not document a stable home-directory markdown file for global rules.
 
-`agent-root` treats this as an adapter problem instead of waiting for a universal standard.
+`agent-root-cli` treats this as an adapter problem instead of waiting for a universal standard.
 
 ## Install
 
 ```bash
-npm install
-npm link
+npm install -g agent-root-cli
+```
+
+Or run it without a global install:
+
+```bash
+npx agent-root-cli sync
 ```
 
 ## Usage
@@ -33,38 +38,38 @@ npm link
 Create the single source file if it does not exist:
 
 ```bash
-agent-root init
+agent-root-cli init
 ```
 
 Sync all targets:
 
 ```bash
-agent-root sync
+agent-root-cli sync
 ```
 
 Preview changes without writing:
 
 ```bash
-agent-root sync --dry-run
+agent-root-cli sync --dry-run
 ```
 
 Use a custom source:
 
 ```bash
-agent-root sync --source ~/company/AGENTS.md
+agent-root-cli sync --source ~/company/AGENTS.md
 ```
 
 Machine-readable output:
 
 ```bash
-agent-root sync --json
+agent-root-cli sync --json
 ```
 
 ## What gets written
 
 ### Codex
 
-`agent-root` mirrors the source content into:
+`agent-root-cli` mirrors the source content into:
 
 ```text
 ~/.codex/AGENTS.md
@@ -72,7 +77,7 @@ agent-root sync --json
 
 ### Claude
 
-`agent-root` writes a managed shim:
+`agent-root-cli` writes a managed shim:
 
 ```md
 @/Users/you/AGENTS.md

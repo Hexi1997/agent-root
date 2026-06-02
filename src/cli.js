@@ -37,12 +37,12 @@ async function main() {
 }
 
 function printHelp(defaultSourcePath) {
-  process.stdout.write(`agent-root
+  process.stdout.write(`agent-root-cli
 
 Usage:
-  agent-root sync [options]
-  agent-root init [options]
-  agent-root --help
+  agent-root-cli sync [options]
+  agent-root-cli init [options]
+  agent-root-cli --help
 
 Commands:
   sync              Sync the source AGENTS file into supported targets.

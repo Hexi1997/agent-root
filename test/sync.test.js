@@ -7,7 +7,7 @@ import path from "node:path";
 import { createContext, ensureSourceFile, runSync } from "../src/lib/sync.js";
 
 test("ensureSourceFile creates a default source", async () => {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "agent-root-"));
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "agent-root-cli-"));
   process.env.AGENTSYNC_HOME = tempDir;
   process.env.CODEX_HOME = path.join(tempDir, ".codex-test");
   process.env.CLAUDE_HOME = path.join(tempDir, ".claude-test");
@@ -22,7 +22,7 @@ test("ensureSourceFile creates a default source", async () => {
 });
 
 test("runSync writes Codex and Claude targets", async () => {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "agent-root-"));
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "agent-root-cli-"));
   process.env.AGENTSYNC_HOME = tempDir;
   process.env.CODEX_HOME = path.join(tempDir, ".codex-test");
   process.env.CLAUDE_HOME = path.join(tempDir, ".claude-test");

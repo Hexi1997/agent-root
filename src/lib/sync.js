@@ -212,7 +212,7 @@ async function writeManagedFile({ dryRun, label, path: targetPath, content, desc
 }
 
 function renderClaudeShim(sourcePath) {
-  return `# Managed by agent-root
+  return `# Managed by agent-root-cli
 # Edit the single source file instead:
 # ${sourcePath}
 
@@ -221,7 +221,7 @@ function renderClaudeShim(sourcePath) {
 }
 
 function renderCursorHint(sourceContent, paths) {
-  return `# Managed by agent-root
+  return `# Managed by agent-root-cli
 
 This file documents the single-source setup for Cursor.
 
